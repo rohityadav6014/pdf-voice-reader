@@ -87,8 +87,20 @@ const Reader = (() => {
       u.pitch = 1.05;
       u.volume = 1; // the voice stays at full volume; background music sits underneath
       const t0 = performance.now();
+      // Timing is measured against the English source text, whatever language is spoken.
+      const srcChars = lang === 'hi' ? s.text.length : s.text.length - fromChar;
+      let startedAt = 0;
+      const markStart = () => {
+        startedAt = performance.now();
+        emit('speaking', { idx, chars: srcChars, at: startedAt });
+      };
+      // Some voices never fire onstart, so the time speech was requested is used until (if) it does.
+      u.onstart = markStart;
       const finished = failed => {
         if (my !== token) return;
+        if (!failed && startedAt) {
+          emit('spoken', { lang, chars: srcChars, seconds: (performance.now() - startedAt) / 1000, rate });
+        }
         // A voice that can't speak this language "finishes" instantly; stop instead of racing through the PDF.
         if (failed || (text.length > 25 && performance.now() - t0 < text.length * 20)) quickEnds++;
         else quickEnds = 0;
@@ -109,6 +121,7 @@ const Reader = (() => {
       };
       utterance = u;
       speechSynthesis.speak(u);
+      markStart();
 
       // Chrome's online voices stop after ~15 s of continuous speech; nudging keeps them going.
       if (v && /google/i.test(v.name)) {

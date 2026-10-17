@@ -121,6 +121,8 @@
     Reader.load(sentences);
     ui.seek.max = Math.max(sentences.length - 1, 0);
     updateSeek(0);
+    finishedReading = false;
+    refreshTime();
 
     if (!sentences.length) {
       toast('No readable text found. This looks like a scanned PDF (images only), which can\'t be read aloud.', 8000);
@@ -152,6 +154,49 @@
     Reader.startAt(target, from);
   }
 
+  /* ---------- Reading time left ---------- */
+  const timeUi = {
+    left: $('statLeft'), end: $('statEnd'), total: $('statTotal'), bar: $('statBar'), note: $('statNote'), pill: $('timeLeft'),
+  };
+  const timing = { fromChar: 0, speakingIdx: -1, startedAt: 0, chars: 0 };
+  let finishedReading = false;
+
+  /** Recompute the estimate. `previewIdx` shows the time left from a slider position while dragging. */
+  function refreshTime(previewIdx) {
+    const list = Reader.sentences;
+    if (!list.length) {
+      timeUi.left.textContent = timeUi.end.textContent = timeUi.total.textContent = '–';
+      timeUi.pill.textContent = '⏱ –';
+      timeUi.bar.style.width = '0%';
+      return;
+    }
+    const lang = Reader.lang;
+    const rate = +ui.rate.value;
+    const total = Timing.total(list, lang, rate);
+    let left;
+    if (previewIdx != null) {
+      left = Timing.remaining(list, previewIdx, lang, rate);
+    } else if (Reader.playing && timing.speakingIdx === Reader.index && timing.startedAt) {
+      // Count down smoothly through the sentence being spoken.
+      const current = Timing.secondsFor(timing.chars, 1, lang, rate);
+      const elapsed = (performance.now() - timing.startedAt) / 1000;
+      left = Math.max(current - elapsed, 0) + Timing.remaining(list, Reader.index + 1, lang, rate);
+    } else {
+      left = Timing.remaining(list, Reader.index, lang, rate, timing.fromChar);
+    }
+    if (finishedReading) left = 0;
+
+    timeUi.left.textContent = Timing.clock(left);
+    timeUi.end.textContent = left > 0 ? Timing.finishAt(left) : 'Done';
+    timeUi.total.textContent = Timing.words(total);
+    timeUi.bar.style.width = `${Math.min(100, Math.max(0, (1 - left / total) * 100)).toFixed(1)}%`;
+    timeUi.pill.textContent = previewIdx != null ? `⏱ ${Timing.clock(left)} from here` : `⏱ ${Timing.clock(left)} left`;
+    timeUi.pill.title = `About ${Timing.words(left)} left · finishes around ${Timing.finishAt(left)}`;
+    timeUi.note.textContent = `Estimated at ${rate}× in ${lang === 'hi' ? 'Hindi' : 'English'}. It updates when you skip or change speed, and learns your voice's pace.`;
+  }
+
+  setInterval(() => { if (!ui.reader.hidden && Reader.playing) refreshTime(); }, 1000);
+
   /* ---------- Reader events → UI ---------- */
   function updateSeek(i) {
     const total = Reader.sentences.length;
@@ -160,9 +205,21 @@
     ui.seekLabel.textContent = total ? `Page ${s.page + 1} / ${state.pages.length} · ${i + 1} of ${total}` : 'No text';
   }
 
+  Reader.on('speaking', d => {
+    timing.speakingIdx = d.idx;
+    timing.startedAt = d.at;
+    timing.chars = d.chars;
+    refreshTime();
+  });
+  Reader.on('spoken', d => Timing.learn(d.lang, d.chars, d.seconds, d.rate));
+
   Reader.on('position', ({ idx, sentence, fromChar }) => {
     if (!sentence) return;
     updateSeek(idx);
+    finishedReading = false;
+    timing.fromChar = fromChar || 0;
+    timing.speakingIdx = -1;
+    refreshTime();
     ui.posLabel.textContent = `· page ${sentence.page + 1}`;
     ui.nowText.textContent = fromChar ? '… ' + sentence.text.slice(fromChar) : sentence.text;
     ui.nowText.classList.remove('muted');
@@ -189,7 +246,11 @@
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
-  Reader.on('finished', () => toast('Finished reading the document. 🎉'));
+  Reader.on('finished', () => {
+    finishedReading = true;
+    refreshTime();
+    toast('Finished reading the document. 🎉');
+  });
   Reader.on('stopped', () => Viewer.clearHighlight());
 
   /* ---------- Player controls ---------- */
@@ -199,7 +260,7 @@
   $('prevPage').addEventListener('click', () => Reader.prevPage());
   $('nextPage').addEventListener('click', () => Reader.nextPage());
   $('stopBtn').addEventListener('click', () => { Reader.stop(); Reader.goTo(0); });
-  ui.seek.addEventListener('input', () => updateSeek(+ui.seek.value));
+  ui.seek.addEventListener('input', () => { updateSeek(+ui.seek.value); refreshTime(+ui.seek.value); });
   ui.seek.addEventListener('change', () => Reader.goTo(+ui.seek.value));
 
   document.addEventListener('keydown', e => {
@@ -223,6 +284,7 @@
     setSegmented('langToggle', b.dataset.lang);
     Reader.setLang(b.dataset.lang);
     store.set('pdfreader.lang', b.dataset.lang);
+    refreshTime();
     fillVoices();
     if (b.dataset.lang === 'hi') {
       const s = Reader.sentences[Reader.index];
@@ -283,7 +345,11 @@
     }
   }
 
-  ui.rate.addEventListener('change', () => { Reader.setRate(+ui.rate.value); store.set('pdfreader.rate', ui.rate.value); });
+  ui.rate.addEventListener('change', () => {
+    Reader.setRate(+ui.rate.value);
+    store.set('pdfreader.rate', ui.rate.value);
+    refreshTime();
+  });
 
   /* ---------- Background music ---------- */
   const music = {

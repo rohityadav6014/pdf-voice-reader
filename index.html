@@ -7,7 +7,7 @@
   <title>PDF Voice Reader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=9">
 </head>
 <body>
   <!-- Animated backdrop: CSS aurora (always) + Three.js scene (when motion is allowed) -->
@@ -96,6 +96,14 @@
           </div>
           <p id="nowText" class="now-text muted">Press play, or double-click a word in the PDF.</p>
           <p id="nowTextHi" class="now-text hi" hidden></p>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><span class="stat-label">Time left</span><span class="stat-value" id="statLeft">–</span></div>
+          <div class="stat"><span class="stat-label">Finish by</span><span class="stat-value" id="statEnd">–</span></div>
+          <div class="stat"><span class="stat-label">Whole PDF</span><span class="stat-value" id="statTotal">–</span></div>
+          <div class="stat-progress" aria-hidden="true"><div id="statBar"></div></div>
+          <p class="stat-note small muted" id="statNote"></p>
         </div>
 
         <div class="field">
@@ -191,6 +199,7 @@
     <div class="seek">
       <input type="range" id="seek" min="0" max="0" value="0" aria-label="Jump to position">
       <span id="seekLabel" class="small muted">0 / 0</span>
+      <span id="timeLeft" class="time-left" title="Estimated reading time left">⏱ –</span>
     </div>
   </footer>
 
@@ -200,14 +209,15 @@
   <div id="printArea" class="print-area"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="js/text-utils.js"></script>
-  <script src="js/notes.js"></script>
-  <script src="js/translate.js"></script>
-  <script src="js/voices.js"></script>
-  <script src="js/viewer.js"></script>
-  <script src="js/reader.js"></script>
-  <script src="js/music.js"></script>
-  <script src="js/fx.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/text-utils.js?v=9"></script>
+  <script src="js/notes.js?v=9"></script>
+  <script src="js/translate.js?v=9"></script>
+  <script src="js/voices.js?v=9"></script>
+  <script src="js/viewer.js?v=9"></script>
+  <script src="js/timing.js?v=9"></script>
+  <script src="js/reader.js?v=9"></script>
+  <script src="js/music.js?v=9"></script>
+  <script src="js/fx.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>
