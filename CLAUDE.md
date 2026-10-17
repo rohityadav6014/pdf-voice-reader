@@ -2,6 +2,8 @@
 
 Static website (no build step): `index.html`, `css/`, `js/`. Run with `python -m http.server 8765` (see `.claude/launch.json`).
 
+Live on GitHub Pages (public repo `rohityadav6014/pdf-voice-reader`, branch `main`, root): https://rohityadav6014.github.io/pdf-voice-reader/ — every push to `main` redeploys it.
+
 ## Git workflow
 
 - Every change must be committed and pushed to GitHub (`origin`, branch `main`) when the work is done — the user asked for all future changes to be uploaded.
