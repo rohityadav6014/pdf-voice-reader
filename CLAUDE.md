@@ -1,4 +1,4 @@
-# PDF Voice Reader
+# Sunotes
 
 Static website (no build step): `index.html`, `css/`, `js/`. Run with `python -m http.server 8765` (see `.claude/launch.json`).
 

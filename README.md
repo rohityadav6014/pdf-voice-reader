@@ -1,6 +1,6 @@
-# PDF Voice Reader
+# Sunotes
 
-Upload a PDF or Word (.docx) file → listen to it in English or Hindi with a female voice, and download page-by-page notes.
+**Sunotes** ("suno" = listen, + notes): upload a PDF or Word (.docx) file → listen to it in English or Hindi with a female voice, and download page-by-page notes.
 
 **Live site:** https://rohityadav6014.github.io/pdf-voice-reader/
 

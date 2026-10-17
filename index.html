@@ -5,19 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#16181b" media="(prefers-color-scheme: dark)">
-  <title>PDF Voice Reader</title>
+  <title>Sunotes · Listen to your PDFs and Word files</title>
+  <meta name="description" content="Sunotes reads your PDF and Word files aloud in English or Hindi, and makes page-by-page notes you can download.">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400;7..72,600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=12">
+  <link rel="stylesheet" href="css/styles.css?v=13">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">📖</span>
-      <span class="brand-name">PDF Voice Reader</span>
-    </div>
+    <a href="./" class="brand" id="homeLink" title="Sunotes home">
+      <img class="logo" src="assets/logo.svg" alt="" width="32" height="32">
+      <span class="brand-name">Sunotes</span>
+    </a>
     <div class="topbar-actions">
       <span id="fileName" class="file-name"></span>
+      <button class="btn" id="backBtn" hidden>Back to reading</button>
       <label class="btn" for="fileInputTop" id="changeFileBtn" hidden>Open another file</label>
       <input type="file" id="fileInputTop" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
     </div>
@@ -25,23 +28,81 @@
 
   <!-- Upload screen -->
   <section id="uploadScreen" class="upload-screen">
-    <div class="upload-inner">
-      <h1>Listen to your study material</h1>
-      <p class="lead">Upload a PDF or Word file. It's read aloud in English or हिन्दी, and you get page-by-page notes to download.</p>
+    <div class="home">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span lang="hi">सुनो</span> · listen &nbsp;+&nbsp; notes</p>
+          <h1>Listen to your study material.</h1>
+          <p class="lead">Sunotes reads your PDF and Word files aloud in a clear voice, in English or हिन्दी,
+            and makes simple notes for every page.</p>
+          <ul class="hero-points">
+            <li>Start from any word with a double-click</li>
+            <li>Pick up exactly where you stopped last time</li>
+            <li>Your files never leave your device</li>
+          </ul>
+        </div>
 
-      <div id="dropZone" class="drop-zone" tabindex="0">
-        <div class="drop-icon" aria-hidden="true">📄</div>
-        <p class="drop-title">Drop a PDF or Word file here</p>
-        <label class="btn btn-primary btn-lg" for="fileInput">Choose file</label>
-        <input type="file" id="fileInput" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-        <p class="hint">PDF or .docx · your file stays in your browser</p>
+        <div id="dropZone" class="drop-zone" tabindex="0">
+          <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M14 6h14l10 10v24a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M28 6v10h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M24 34V22m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="drop-title">Drop a PDF or Word file here</p>
+          <p class="hint">or</p>
+          <label class="btn btn-primary btn-lg" for="fileInput">Choose a file</label>
+          <input type="file" id="fileInput" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+          <p class="hint">PDF or .docx</p>
+        </div>
       </div>
 
-      <ul class="features">
-        <li><b>Double-click any word</b> to start reading from there</li>
-        <li><b>Skip</b> by sentence or page, or jump with the slider</li>
-        <li><b>Notes</b> for every page, as Word, text or PDF</li>
-      </ul>
+      <section id="recent" class="recent" hidden>
+        <h2>Continue where you left off</h2>
+        <ul id="recentList" class="recent-list"></ul>
+      </section>
+
+      <section class="how">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <div><b>Upload</b><p>Choose a PDF or Word file from your device.</p></div>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <div><b>Listen</b><p>Press play or double-click any word. Skip, slow down or speed up anytime.</p></div>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <div><b>Revise</b><p>Read the page-by-page notes and download them as Word, text or PDF.</p></div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="feature-grid">
+        <div class="feature">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>
+          <b>English &amp; हिन्दी</b>
+          <p>A clear female voice reads in either language.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+          <b>Time left</b>
+          <p>See how long the rest will take at your speed.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></svg>
+          <b>Page notes</b>
+          <p>Definitions and key points for every page.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/></svg>
+          <b>Resume anytime</b>
+          <p>Open the same file again to carry on from where you stopped.</p>
+        </div>
+      </section>
+
+      <footer class="home-footer">Sunotes · made for focused study · files are processed in your browser</footer>
     </div>
   </section>
 
@@ -64,6 +125,13 @@
             <button class="icon-btn" id="zoomIn" title="Bigger" aria-label="Zoom in">+</button>
           </div>
           <button class="btn btn-quiet" id="panelToggle" aria-pressed="false" title="Give the document the full width">Hide panel</button>
+        </div>
+      </div>
+      <div id="resumeBar" class="resume-bar" hidden>
+        <span id="resumeText"></span>
+        <div class="resume-actions">
+          <button class="btn btn-primary" id="resumeGo">Continue</button>
+          <button class="btn btn-quiet" id="resumeRestart">Start over</button>
         </div>
       </div>
       <div id="viewer" class="viewer"></div>
@@ -191,15 +259,16 @@
   <div id="printArea" class="print-area"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="js/text-utils.js?v=12"></script>
-  <script src="js/notes.js?v=12"></script>
-  <script src="js/translate.js?v=12"></script>
-  <script src="js/voices.js?v=12"></script>
-  <script src="js/viewer.js?v=12"></script>
-  <script src="js/docview.js?v=12"></script>
-  <script src="js/timing.js?v=12"></script>
-  <script src="js/reader.js?v=12"></script>
-  <script src="js/music.js?v=12"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/text-utils.js?v=13"></script>
+  <script src="js/notes.js?v=13"></script>
+  <script src="js/translate.js?v=13"></script>
+  <script src="js/voices.js?v=13"></script>
+  <script src="js/viewer.js?v=13"></script>
+  <script src="js/docview.js?v=13"></script>
+  <script src="js/library.js?v=13"></script>
+  <script src="js/timing.js?v=13"></script>
+  <script src="js/reader.js?v=13"></script>
+  <script src="js/music.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
 </body>
 </html>

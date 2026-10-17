@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sunotes">
+  <defs>
+    <linearGradient id="sunotes-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a86a8"/>
+      <stop offset="1" stop-color="#245a75"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#sunotes-bg)"/>
+  <!-- sound waves rising from the book -->
+  <path d="M25 21.5 Q32 15.5 39 21.5" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M19.5 15.5 Q32 5 44.5 15.5" fill="none" stroke="#ffd36e" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- open book -->
+  <path d="M10 28 C18 25 26 26 32 30 V53 C26 49 18 48.5 10 51 Z" fill="#ffffff"/>
+  <path d="M54 28 C46 25 38 26 32 30 V53 C38 49 46 48.5 54 51 Z" fill="#e3f0f6"/>
+  <path d="M15 33.5 C19.5 32.3 23.5 32.7 27 34.2 M15 39 C19.5 37.8 23.5 38.2 27 39.7 M15 44.5 C19.5 43.3 23.5 43.7 27 45.2" fill="none" stroke="#9cc3d6" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

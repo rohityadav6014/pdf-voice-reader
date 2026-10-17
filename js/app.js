@@ -41,7 +41,61 @@
     ui.reader.hidden = screen !== 'reader';
     ui.player.hidden = screen !== 'reader';
     ui.changeFile.hidden = screen !== 'reader';
+    ui.fileName.hidden = screen !== 'reader';
+    // On the home page, offer a way back to the document that's still open.
+    $('backBtn').hidden = !(screen === 'upload' && state.docName && Reader.sentences.length);
+    if (screen === 'upload') renderRecent();
   }
+
+  /* ---------- Home: logo link, back button, recent files ---------- */
+  function goHome() {
+    Reader.pause();
+    saveProgressNow();
+    show('upload');
+    ui.upload.scrollTop = 0;
+  }
+  $('homeLink').addEventListener('click', e => { e.preventDefault(); goHome(); });
+  $('backBtn').addEventListener('click', () => show('reader'));
+
+  function renderRecent() {
+    const items = Library.list();
+    const list = $('recentList');
+    $('recent').hidden = !items.length;
+    const esc = Notes.esc;
+    list.innerHTML = items.map(e => {
+      const pct = e.total > 1 ? Math.round((e.idx / (e.total - 1)) * 100) : 0;
+      const where = e.pages ? `Page ${e.page + 1} of ${e.pages}` : 'Not started';
+      return `<li class="recent-item" data-id="${esc(e.id)}">
+        <span class="file-badge ${e.kind === 'docx' ? 'docx' : 'pdf'}">${e.kind === 'docx' ? 'DOCX' : 'PDF'}</span>
+        <div class="recent-info">
+          <div class="recent-name" title="${esc(e.name)}">${esc(e.name)}</div>
+          <div class="recent-meta">${where} · ${pct}% · ${Library.ago(e.updatedAt)}</div>
+          <div class="recent-bar"><div style="width:${pct}%"></div></div>
+        </div>
+        <div class="recent-actions">
+          ${e.stored
+            ? `<button class="btn btn-primary" data-act="open">${pct > 0 ? 'Continue' : 'Open'}</button>`
+            : `<label class="btn" for="fileInput" title="This file is too big to keep here. Choose it again and it will continue where you stopped.">Choose again</label>`}
+          <button class="recent-remove" data-act="remove">Remove</button>
+        </div>
+      </li>`;
+    }).join('');
+  }
+
+  $('recentList').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = btn.closest('.recent-item').dataset.id;
+    if (btn.dataset.act === 'remove') {
+      await Library.remove(id);
+      renderRecent();
+      return;
+    }
+    const entry = Library.get(id);
+    const buf = entry && await Library.loadFile(id);
+    if (!buf) { toast('This file is no longer saved here. Please choose it again.'); return; }
+    openFile(buf, entry.name, entry.kind, { id, autoResume: true });
+  });
 
   const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -49,9 +103,9 @@
     if (!file) return;
     const name = file.name || '';
     if (file.type === 'application/pdf' || /\.pdf$/i.test(name)) {
-      file.arrayBuffer().then(buf => openPdf(buf, name));
+      file.arrayBuffer().then(buf => openFile(buf, name, 'pdf'));
     } else if (file.type === DOCX_TYPE || /\.docx$/i.test(name)) {
-      file.arrayBuffer().then(buf => openDocx(buf, name));
+      file.arrayBuffer().then(buf => openFile(buf, name, 'docx'));
     } else if (/\.doc$/i.test(name) || file.type === 'application/msword') {
       toast('Old .doc files aren\'t supported. In Word, use File → Save As → Word Document (.docx), then upload that.', 8000);
     } else {
@@ -71,6 +125,72 @@
   window.addEventListener('dragover', e => e.preventDefault());
   window.addEventListener('drop', e => e.preventDefault());
 
+  /* ---------- Open a file and resume where the reader stopped ---------- */
+  async function openFile(buffer, name, kind, opts = {}) {
+    saveProgressNow();
+    state.trackProgress = false; // don't overwrite saved progress while the file loads
+    const id = opts.id || await Library.fingerprint(buffer, name);
+    // Copy the bytes before pdf.js takes ownership of the buffer.
+    const copy = opts.id ? null : new Blob([buffer]);
+    const ok = kind === 'docx' ? await openDocx(buffer, name) : await openPdf(buffer, name);
+    if (!ok) return;
+    state.fileId = id;
+    await Library.remember({ id, name, kind, size: copy ? copy.size : buffer.byteLength }, copy);
+    offerResume(id, opts.autoResume);
+  }
+
+  function offerResume(id, auto) {
+    const e = Library.get(id);
+    const list = Reader.sentences;
+    $('resumeBar').hidden = true;
+    state.trackProgress = true;
+    if (!e || !e.idx || e.idx >= list.length - 1) return;
+    const page = list[e.idx].page;
+    if (auto) {
+      resumeAt(e.idx);
+      toast(`Continuing from page ${page + 1}. Press play when you're ready.`);
+      return;
+    }
+    $('resumeText').textContent = `Welcome back! You stopped on page ${page + 1} of ${state.pages.length} (${Library.ago(e.updatedAt)}).`;
+    $('resumeBar').hidden = false;
+    state.resumeIdx = e.idx;
+  }
+
+  function resumeAt(idx) {
+    $('resumeBar').hidden = true;
+    Reader.goTo(idx);
+    view().scrollToPage(Reader.sentences[idx].page);
+  }
+
+  $('resumeGo').addEventListener('click', () => { resumeAt(state.resumeIdx); Reader.play(); });
+  $('resumeRestart').addEventListener('click', () => {
+    $('resumeBar').hidden = true;
+    Reader.goTo(0);
+    view().scrollToPage(0);
+    saveProgressNow(true);
+  });
+
+  /* ---------- Save reading progress ---------- */
+  let saveTimer = null;
+  let progressDirty = false;
+  function scheduleSave() {
+    if (!state.fileId || !state.trackProgress) return;
+    progressDirty = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveProgressNow, 800);
+  }
+  function saveProgressNow(force) {
+    clearTimeout(saveTimer);
+    if (!state.fileId || (!progressDirty && !force)) return;
+    const i = Reader.index;
+    const s = Reader.sentences[i];
+    if (!s) return;
+    Library.saveProgress(state.fileId, { idx: i, total: Reader.sentences.length, page: s.page, pages: state.pages.length });
+    progressDirty = false;
+  }
+  window.addEventListener('pagehide', () => saveProgressNow());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveProgressNow(); });
+
   /* ---------- Load & analyse PDF ---------- */
   async function openPdf(buffer, name) {
     Reader.stop();
@@ -85,7 +205,7 @@
       toast(err && err.name === 'PasswordException'
         ? 'This PDF is password-protected. Please remove the password and try again.'
         : 'Could not open this PDF. The file may be damaged.');
-      return;
+      return false;
     }
 
     state.mode = 'pdf';
@@ -129,6 +249,7 @@
     DocView.detach();
     Viewer.init(pdf, ui.viewer, state.pages, onDoubleClick);
     finishOpen(sentences, 'No readable text found. This looks like a scanned PDF (images only), which can\'t be read aloud.');
+    return true;
   }
 
   /* ---------- Load & analyse Word (.docx) ---------- */
@@ -143,7 +264,7 @@
     } catch (err) {
       show('upload');
       toast(/internet/.test(err.message) ? err.message : 'Could not open this Word file. Please make sure it is a .docx file and not damaged.', 7000);
-      return;
+      return false;
     }
     ui.loadingBar.style.width = '100%';
 
@@ -157,6 +278,7 @@
     show('reader');
     DocView.render(ui.viewer, doc.pages, onDocDoubleClick);
     finishOpen(doc.sentences, 'No readable text found in this Word file.');
+    return true;
   }
 
   // Shared last steps after a PDF or Word file is ready.
@@ -275,6 +397,7 @@
     if (!sentence) return;
     updateSeek(idx);
     finishedReading = false;
+    scheduleSave();
     timing.fromChar = fromChar || 0;
     timing.speakingIdx = -1;
     refreshTime();
@@ -302,6 +425,7 @@
     ui.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     Music.setPlaying(playing);
     document.body.classList.toggle('is-playing', playing);
+    if (!playing) saveProgressNow();
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
@@ -629,6 +753,7 @@
   });
 
   /* ---------- Start-up ---------- */
+  renderRecent();
   (async () => {
     if (!('speechSynthesis' in window)) {
       toast('Your browser does not support speech. Please use Google Chrome or Microsoft Edge.', 10000);
@@ -650,5 +775,5 @@
   })();
 
   // Exposed for automated testing.
-  window.PdfVoiceReader = { openPdf, openDocx };
+  window.PdfVoiceReader = { openPdf, openDocx, openFile };
 })();
