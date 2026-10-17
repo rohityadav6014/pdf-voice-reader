@@ -45,8 +45,8 @@ const Viewer = (() => {
 
   function computeScale() {
     const maxW = Math.max(...pages.map(p => p.width), 1);
-    const avail = Math.max(container.clientWidth - 64, 280);
-    scale = Math.min(avail / maxW, 1.8) * zoom;
+    const avail = Math.max(container.clientWidth - 40, 280);
+    scale = Math.min(avail / maxW, 2.4) * zoom; // fit the page to the full width for comfortable reading
   }
 
   function sizePage(i) {

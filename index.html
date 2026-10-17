@@ -3,105 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07071a">
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16181b" media="(prefers-color-scheme: dark)">
   <title>PDF Voice Reader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400;7..72,600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=12">
 </head>
 <body>
-  <!-- Animated backdrop: CSS aurora (always) + Three.js scene (when motion is allowed) -->
-  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-  <canvas id="bg3d" class="bg3d" aria-hidden="true"></canvas>
-  <div class="grain" aria-hidden="true"></div>
-
-  <header class="topbar glass">
+  <header class="topbar">
     <div class="brand">
-      <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="logo" aria-hidden="true">📖</span>
       <span class="brand-name">PDF Voice Reader</span>
     </div>
     <div class="topbar-actions">
       <span id="fileName" class="file-name"></span>
-      <label class="btn btn-ghost" for="fileInputTop" id="changeFileBtn" hidden>Open another PDF</label>
-      <input type="file" id="fileInputTop" accept="application/pdf" hidden>
+      <label class="btn" for="fileInputTop" id="changeFileBtn" hidden>Open another file</label>
+      <input type="file" id="fileInputTop" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
     </div>
   </header>
 
   <!-- Upload screen -->
   <section id="uploadScreen" class="upload-screen">
-    <div class="hero">
-      <div class="hero-copy">
-        <span class="eyebrow" data-reveal><span class="dot"></span> English · हिन्दी · Female voice</span>
-        <h1 data-reveal>Listen to any <span class="gradient-text">PDF</span></h1>
-        <p class="lead" data-reveal>Upload a PDF and hear it read aloud in a clear, natural voice, with page-by-page
-          notes you can download.</p>
-        <ul class="features">
-          <li class="glass" data-reveal><span class="f-icon">👆</span><span><b>Double-click to start</b> from any word on the page</span></li>
-          <li class="glass" data-reveal><span class="f-icon">⏭</span><span><b>Skip freely</b> by sentence, page, or slider</span></li>
-          <li class="glass" data-reveal><span class="f-icon">📝</span><span><b>Smart notes</b> for every page, in Word, text or PDF</span></li>
-        </ul>
+    <div class="upload-inner">
+      <h1>Listen to your study material</h1>
+      <p class="lead">Upload a PDF or Word file. It's read aloud in English or हिन्दी, and you get page-by-page notes to download.</p>
+
+      <div id="dropZone" class="drop-zone" tabindex="0">
+        <div class="drop-icon" aria-hidden="true">📄</div>
+        <p class="drop-title">Drop a PDF or Word file here</p>
+        <label class="btn btn-primary btn-lg" for="fileInput">Choose file</label>
+        <input type="file" id="fileInput" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <p class="hint">PDF or .docx · your file stays in your browser</p>
       </div>
 
-      <div id="dropZone" class="drop-zone glass" tabindex="0" data-tilt data-reveal>
-        <div class="doc-stack" aria-hidden="true">
-          <div class="doc d3"></div>
-          <div class="doc d2"></div>
-          <div class="doc d1"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="waves"><i></i><i></i><i></i></div>
-        </div>
-        <h2>Drop your PDF here</h2>
-        <p class="hint">or</p>
-        <label class="btn btn-primary btn-lg" for="fileInput">Choose PDF</label>
-        <input type="file" id="fileInput" accept="application/pdf" hidden>
-        <p class="hint small">🔒 Your PDF stays in your browser</p>
-      </div>
+      <ul class="features">
+        <li><b>Double-click any word</b> to start reading from there</li>
+        <li><b>Skip</b> by sentence or page, or jump with the slider</li>
+        <li><b>Notes</b> for every page, as Word, text or PDF</li>
+      </ul>
     </div>
   </section>
 
   <!-- Loading -->
   <section id="loadingScreen" class="loading-screen" hidden>
-    <div class="cube-scene" aria-hidden="true">
-      <div class="cube"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    </div>
-    <p id="loadingText">Reading your PDF…</p>
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="loadingText">Reading your file…</p>
     <div class="progress"><div id="loadingBar" class="progress-bar"></div></div>
   </section>
 
   <!-- Reader -->
   <main id="readerScreen" class="reader" hidden>
-    <section class="viewer-wrap glass">
+    <section class="viewer-wrap">
       <div class="viewer-toolbar">
-        <span class="tip">✨ Double-click any word to start reading from there</span>
-        <div class="zoom">
-          <button class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
-          <span id="zoomLabel">100%</span>
-          <button class="icon-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <span class="tip">Double-click any word to start reading from there</span>
+        <div class="toolbar-right">
+          <div class="zoom">
+            <button class="icon-btn" id="zoomOut" title="Smaller" aria-label="Zoom out">−</button>
+            <span id="zoomLabel">100%</span>
+            <button class="icon-btn" id="zoomIn" title="Bigger" aria-label="Zoom in">+</button>
+          </div>
+          <button class="btn btn-quiet" id="panelToggle" aria-pressed="false" title="Give the document the full width">Hide panel</button>
         </div>
       </div>
       <div id="viewer" class="viewer"></div>
     </section>
 
-    <aside class="side glass">
+    <aside class="side">
       <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="listen" role="tab">🔊 Listen</button>
-        <button class="tab" data-tab="notes" role="tab">📝 Notes</button>
-        <span class="tab-indicator" aria-hidden="true"></span>
+        <button class="tab active" data-tab="listen" role="tab">Listen</button>
+        <button class="tab" data-tab="notes" role="tab">Notes</button>
       </div>
 
       <div class="tab-panel" id="panel-listen">
         <div class="now-reading">
-          <div class="now-head">
-            <div class="field-label">Now reading <span id="posLabel" class="muted"></span></div>
-            <div class="eq eq-small" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-          </div>
-          <p id="nowText" class="now-text muted">Press play, or double-click a word in the PDF.</p>
+          <div class="field-label">Now reading <span id="posLabel" class="muted"></span></div>
+          <p id="nowText" class="now-text muted">Press play, or double-click a word in the document.</p>
           <p id="nowTextHi" class="now-text hi" hidden></p>
         </div>
 
         <div class="stats">
           <div class="stat"><span class="stat-label">Time left</span><span class="stat-value" id="statLeft">–</span></div>
           <div class="stat"><span class="stat-label">Finish by</span><span class="stat-value" id="statEnd">–</span></div>
-          <div class="stat"><span class="stat-label">Whole PDF</span><span class="stat-value" id="statTotal">–</span></div>
+          <div class="stat"><span class="stat-label">Whole file</span><span class="stat-value" id="statTotal">–</span></div>
           <div class="stat-progress" aria-hidden="true"><div id="statBar"></div></div>
           <p class="stat-note small muted" id="statNote"></p>
         </div>
@@ -132,7 +116,7 @@
         <label class="check"><input type="checkbox" id="followToggle" checked> Auto-scroll to what's being read</label>
 
         <div class="music">
-          <label class="check"><input type="checkbox" id="musicToggle" checked> 🎵 Background music</label>
+          <label class="check"><input type="checkbox" id="musicToggle" checked> Background music</label>
           <div id="musicControls" class="music-controls">
             <div class="field">
               <label class="field-label" for="musicVolume">Music volume <span id="musicVolLabel" class="muted">40%</span></label>
@@ -141,11 +125,11 @@
             <div class="music-source">
               <input type="url" id="musicUrl" placeholder="Paste a YouTube link" aria-label="YouTube link for background music">
               <button class="btn" id="musicUrlBtn">Use</button>
-              <label class="btn" for="musicFile" title="Use an audio file from your device">⬆ File</label>
+              <label class="btn" for="musicFile" title="Use an audio file from your device">File</label>
               <input type="file" id="musicFile" accept="audio/*" hidden>
             </div>
             <p id="musicName" class="small muted"></p>
-            <button class="btn" id="musicDefaultBtn" hidden>↺ Use default music</button>
+            <button class="btn" id="musicDefaultBtn" hidden>Use default music</button>
             <div id="musicPlayer" class="music-player" hidden></div>
           </div>
         </div>
@@ -160,9 +144,9 @@
             <button data-lang="hi">हिन्दी</button>
           </div>
           <div class="download-group">
-            <button class="btn btn-primary" id="dlDoc">⬇ Word</button>
-            <button class="btn" id="dlTxt">⬇ Text</button>
-            <button class="btn" id="dlPdf">⬇ PDF</button>
+            <button class="btn btn-primary" id="dlDoc">Word</button>
+            <button class="btn" id="dlTxt">Text</button>
+            <button class="btn" id="dlPdf">PDF</button>
           </div>
         </div>
         <p id="notesStatus" class="small muted"></p>
@@ -172,7 +156,7 @@
   </main>
 
   <!-- Player bar -->
-  <footer id="player" class="player glass" hidden>
+  <footer id="player" class="player" hidden>
     <div class="player-controls">
       <button class="icon-btn" id="prevPage" title="Previous page (Shift+←)" aria-label="Previous page">
         <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
@@ -181,7 +165,6 @@
         <svg viewBox="0 0 24 24"><path d="M11 6v12L2 12zM22 6v12l-9-6z"/></svg>
       </button>
       <button class="play-btn" id="playBtn" title="Play / Pause (Space)" aria-label="Play">
-        <span class="play-ring" aria-hidden="true"></span>
         <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
       </button>
@@ -195,29 +178,28 @@
         <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
       </button>
     </div>
-    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="seek">
       <input type="range" id="seek" min="0" max="0" value="0" aria-label="Jump to position">
       <span id="seekLabel" class="small muted">0 / 0</span>
-      <span id="timeLeft" class="time-left" title="Estimated reading time left">⏱ –</span>
+      <span id="timeLeft" class="time-left" title="Estimated reading time left">–</span>
     </div>
   </footer>
 
-  <div id="toast" class="toast glass" hidden></div>
+  <div id="toast" class="toast" hidden></div>
 
   <!-- Print-only notes -->
   <div id="printArea" class="print-area"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="js/text-utils.js?v=9"></script>
-  <script src="js/notes.js?v=9"></script>
-  <script src="js/translate.js?v=9"></script>
-  <script src="js/voices.js?v=9"></script>
-  <script src="js/viewer.js?v=9"></script>
-  <script src="js/timing.js?v=9"></script>
-  <script src="js/reader.js?v=9"></script>
-  <script src="js/music.js?v=9"></script>
-  <script src="js/fx.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/text-utils.js?v=12"></script>
+  <script src="js/notes.js?v=12"></script>
+  <script src="js/translate.js?v=12"></script>
+  <script src="js/voices.js?v=12"></script>
+  <script src="js/viewer.js?v=12"></script>
+  <script src="js/docview.js?v=12"></script>
+  <script src="js/timing.js?v=12"></script>
+  <script src="js/reader.js?v=12"></script>
+  <script src="js/music.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>

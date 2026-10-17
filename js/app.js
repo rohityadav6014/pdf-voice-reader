@@ -43,10 +43,20 @@
     ui.changeFile.hidden = screen !== 'reader';
   }
 
+  const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
   function pickFile(file) {
     if (!file) return;
-    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { toast('Please choose a PDF file.'); return; }
-    file.arrayBuffer().then(buf => openPdf(buf, file.name));
+    const name = file.name || '';
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(name)) {
+      file.arrayBuffer().then(buf => openPdf(buf, name));
+    } else if (file.type === DOCX_TYPE || /\.docx$/i.test(name)) {
+      file.arrayBuffer().then(buf => openDocx(buf, name));
+    } else if (/\.doc$/i.test(name) || file.type === 'application/msword') {
+      toast('Old .doc files aren\'t supported. In Word, use File → Save As → Word Document (.docx), then upload that.', 8000);
+    } else {
+      toast('Please choose a PDF or Word (.docx) file.');
+    }
   }
 
   $('fileInput').addEventListener('change', e => { pickFile(e.target.files[0]); e.target.value = ''; });
@@ -78,6 +88,7 @@
       return;
     }
 
+    state.mode = 'pdf';
     state.docName = name.replace(/\.pdf$/i, '');
     ui.fileName.textContent = name;
     state.pages = [];
@@ -115,21 +126,68 @@
     }
 
     show('reader');
-    Music.prepare();
+    DocView.detach();
     Viewer.init(pdf, ui.viewer, state.pages, onDoubleClick);
+    finishOpen(sentences, 'No readable text found. This looks like a scanned PDF (images only), which can\'t be read aloud.');
+  }
+
+  /* ---------- Load & analyse Word (.docx) ---------- */
+  async function openDocx(buffer, name) {
+    Reader.stop();
+    show('loading');
+    ui.loadingText.textContent = 'Opening your Word file…';
+    ui.loadingBar.style.width = '35%';
+    let doc;
+    try {
+      doc = await DocView.parse(buffer);
+    } catch (err) {
+      show('upload');
+      toast(/internet/.test(err.message) ? err.message : 'Could not open this Word file. Please make sure it is a .docx file and not damaged.', 7000);
+      return;
+    }
+    ui.loadingBar.style.width = '100%';
+
+    state.mode = 'docx';
+    state.docName = name.replace(/\.docx$/i, '');
+    ui.fileName.textContent = name;
+    state.pages = doc.pages;
+    state.notes = { en: [], hi: null };
+    state.currentPage = -1;
+
+    show('reader');
+    DocView.render(ui.viewer, doc.pages, onDocDoubleClick);
+    finishOpen(doc.sentences, 'No readable text found in this Word file.');
+  }
+
+  // Shared last steps after a PDF or Word file is ready.
+  function finishOpen(sentences, emptyMessage) {
+    Music.prepare();
     ui.zoomLabel.textContent = '100%';
     Reader.load(sentences);
     ui.seek.max = Math.max(sentences.length - 1, 0);
     updateSeek(0);
     finishedReading = false;
     refreshTime();
-
-    if (!sentences.length) {
-      toast('No readable text found. This looks like a scanned PDF (images only), which can\'t be read aloud.', 8000);
-    }
-
+    if (!sentences.length) toast(emptyMessage, 8000);
     buildNotes();
   }
+
+  // Word: double-click on a sentence (with the character offset inside it) or on an empty spot of a page.
+  function onDocDoubleClick(idx, rawOffset, pageIdx) {
+    if (idx == null) {
+      const p = state.pages[pageIdx];
+      if (!p || p.last < p.first) { toast('There is no readable text on this page.'); return; }
+      Reader.startAt(p.first);
+      return;
+    }
+    const s = Reader.sentences[idx];
+    let from = s.raw.slice(0, rawOffset).replace(/\s+/g, ' ').replace(/^\s+/, '').length;
+    while (from > 0 && !/\s/.test(s.text[from - 1])) from--;
+    Reader.startAt(idx, from);
+  }
+
+  // The current document view (PDF pages or Word pages).
+  const view = () => (state.mode === 'docx' ? DocView : Viewer);
 
   /* ---------- Double-click → start reading there ---------- */
   function onDoubleClick(pageIdx, itemIdx, charInItem) {
@@ -166,7 +224,7 @@
     const list = Reader.sentences;
     if (!list.length) {
       timeUi.left.textContent = timeUi.end.textContent = timeUi.total.textContent = '–';
-      timeUi.pill.textContent = '⏱ –';
+      timeUi.pill.textContent = '–';
       timeUi.bar.style.width = '0%';
       return;
     }
@@ -190,7 +248,7 @@
     timeUi.end.textContent = left > 0 ? Timing.finishAt(left) : 'Done';
     timeUi.total.textContent = Timing.words(total);
     timeUi.bar.style.width = `${Math.min(100, Math.max(0, (1 - left / total) * 100)).toFixed(1)}%`;
-    timeUi.pill.textContent = previewIdx != null ? `⏱ ${Timing.clock(left)} from here` : `⏱ ${Timing.clock(left)} left`;
+    timeUi.pill.textContent = previewIdx != null ? `${Timing.clock(left)} from here` : `${Timing.clock(left)} left`;
     timeUi.pill.title = `About ${Timing.words(left)} left · finishes around ${Timing.finishAt(left)}`;
     timeUi.note.textContent = `Estimated at ${rate}× in ${lang === 'hi' ? 'Hindi' : 'English'}. It updates when you skip or change speed, and learns your voice's pace.`;
   }
@@ -229,8 +287,9 @@
     } else {
       ui.nowTextHi.hidden = true;
     }
-    Viewer.setHighlight(sentence.page, sentence.items, ui.follow.checked && Reader.playing);
-    if (Reader.playing) FX.pulse();
+    const follow = ui.follow.checked && Reader.playing;
+    if (state.mode === 'docx') DocView.highlight(idx, follow);
+    else Viewer.setHighlight(sentence.page, sentence.items, follow);
     if (sentence.page !== state.currentPage) {
       state.currentPage = sentence.page;
       markCurrentNote();
@@ -242,7 +301,7 @@
     ui.play.classList.toggle('playing', playing);
     ui.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     Music.setPlaying(playing);
-    FX.setPlaying(playing);
+    document.body.classList.toggle('is-playing', playing);
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
@@ -251,7 +310,7 @@
     refreshTime();
     toast('Finished reading the document. 🎉');
   });
-  Reader.on('stopped', () => Viewer.clearHighlight());
+  Reader.on('stopped', () => view().clearHighlight());
 
   /* ---------- Player controls ---------- */
   ui.play.addEventListener('click', () => Reader.toggle());
@@ -270,8 +329,26 @@
     else if (e.key === 'ArrowLeft') { e.preventDefault(); e.shiftKey ? Reader.prevPage() : Reader.prevSentence(); }
   });
 
-  $('zoomIn').addEventListener('click', () => { ui.zoomLabel.textContent = Math.round(Viewer.setZoom(Viewer.getZoom() + 0.2) * 100) + '%'; });
-  $('zoomOut').addEventListener('click', () => { ui.zoomLabel.textContent = Math.round(Viewer.setZoom(Viewer.getZoom() - 0.2) * 100) + '%'; });
+  function zoomBy(dir) {
+    const v = view();
+    const step = state.mode === 'docx' ? 0.1 : 0.2;
+    ui.zoomLabel.textContent = Math.round(v.setZoom(v.getZoom() + dir * step) * 100) + '%';
+  }
+  $('zoomIn').addEventListener('click', () => zoomBy(1));
+  $('zoomOut').addEventListener('click', () => zoomBy(-1));
+
+  // Hide/show the side panel to give the document the full width.
+  const panelBtn = $('panelToggle');
+  function setWide(wide) {
+    ui.reader.classList.toggle('wide', wide);
+    panelBtn.textContent = wide ? 'Show panel' : 'Hide panel';
+    panelBtn.setAttribute('aria-pressed', wide);
+    store.set('pdfreader.wide', wide ? '1' : '0');
+    // PDF pages are sized to fit the width, so re-fit them after the layout changes.
+    if (state.mode === 'pdf' && !ui.reader.hidden) Viewer.setZoom(Viewer.getZoom());
+  }
+  panelBtn.addEventListener('click', () => setWide(!ui.reader.classList.contains('wide')));
+  if (store.get('pdfreader.wide') === '1') setWide(true);
 
   /* ---------- Language & voices ---------- */
   function setSegmented(groupId, value) {
@@ -463,9 +540,7 @@
         </div>
         ${n.empty ? `<p class="small muted">${L.empty}</p>` : ''}
         ${n.definitions.length ? `<h4>${L.defs}</h4><ul>${n.definitions.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
-        ${n.points.length ? `<h4>${L.points}</h4><ul>${n.points.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
-        ${n.keywords.length ? `<h4>${L.keys}</h4><div class="note-tags">${n.keywords.map(k => `<span>${esc(k)}</span>`).join('')}</div>` : ''}
-      </article>`).join('');
+        ${n.points.length ? `<h4>${L.points}</h4><ul>${n.points.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}      </article>`).join('');
     markCurrentNote();
   }
 
@@ -484,7 +559,7 @@
     if (btn.dataset.act === 'listen') {
       const p = state.pages[i];
       if (p.last < p.first) { toast('There is no readable text on this page.'); return; }
-      Viewer.scrollToPage(i);
+      view().scrollToPage(i);
       Reader.startAt(p.first);
     } else if (btn.dataset.act === 'copy') {
       const text = Notes.toText([notes[i]], state.docName, lang);
@@ -516,7 +591,6 @@
         title: out[k++],
         definitions: n.definitions.map(() => out[k++]),
         points: n.points.map(() => out[k++]),
-        keywords: n.keywords, // technical terms stay in English
       }));
       if (state.notesLang === 'hi') renderNotes();
     } catch (err) {
@@ -555,7 +629,6 @@
   });
 
   /* ---------- Start-up ---------- */
-  FX.init();
   (async () => {
     if (!('speechSynthesis' in window)) {
       toast('Your browser does not support speech. Please use Google Chrome or Microsoft Edge.', 10000);
@@ -577,5 +650,5 @@
   })();
 
   // Exposed for automated testing.
-  window.PdfVoiceReader = { openPdf };
+  window.PdfVoiceReader = { openPdf, openDocx };
 })();

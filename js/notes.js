@@ -29,7 +29,7 @@ const Notes = (() => {
 
   /**
    * pages: [{ num, heading, sentences: [string] }]
-   * returns [{ page, title, points[], definitions[], keywords[], empty }]
+   * returns [{ page, title, points[], definitions[], empty }]
    */
   function generate(pages) {
     // Document-wide frequencies so very common words don't dominate every page.
@@ -42,7 +42,7 @@ const Notes = (() => {
     return pages.map(p => {
       const sents = p.sentences.filter(s => (s.match(/\p{L}+/gu) || []).length >= 3);
       if (!sents.length) {
-        return { page: p.num, title: p.heading || `Page ${p.num}`, points: [], definitions: [], keywords: [], empty: true };
+        return { page: p.num, title: p.heading || `Page ${p.num}`, points: [], definitions: [], empty: true };
       }
 
       const tf = new Map();
@@ -72,30 +72,13 @@ const Notes = (() => {
         .sort((a, b) => a.i - b.i)
         .map(x => tidy(x.s));
 
-      // Key terms: frequent words plus repeated two-word phrases.
-      const phraseCount = new Map();
-      sents.forEach(s => {
-        const ws = s.toLowerCase().match(/[\p{L}][\p{L}\p{N}-]*/gu) || [];
-        for (let i = 0; i < ws.length - 1; i++) {
-          if (STOP.has(ws[i]) || STOP.has(ws[i + 1]) || ws[i].length < 3 || ws[i + 1].length < 3) continue;
-          const ph = ws[i] + ' ' + ws[i + 1];
-          phraseCount.set(ph, (phraseCount.get(ph) || 0) + 1);
-        }
-      });
-      const phrases = [...phraseCount].filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p]) => p);
-      const singles = [...tf.keys()]
-        .filter(w => !phrases.some(p => p.includes(w)))
-        .sort((a, b) => weight(b) - weight(a))
-        .slice(0, 8 - phrases.length);
-      const keywords = [...phrases, ...singles].slice(0, 8);
-
       let title = p.heading;
       if (!title) {
         const first = sents[0];
         title = first.length <= 70 && !/[.!?]$/.test(first) ? first : `Page ${p.num}`;
       }
 
-      return { page: p.num, title: tidy(title, 100), points, definitions: definitions.map(d => tidy(d)), keywords, empty: false };
+      return { page: p.num, title: tidy(title, 100), points, definitions: definitions.map(d => tidy(d)), empty: false };
     });
   }
 
@@ -104,8 +87,8 @@ const Notes = (() => {
 
   function labels(lang) {
     return lang === 'hi'
-      ? { page: 'पृष्ठ', points: 'मुख्य बिंदु', defs: 'परिभाषाएँ', keys: 'मुख्य शब्द', empty: 'इस पृष्ठ पर पढ़ने योग्य टेक्स्ट नहीं है।', notes: 'नोट्स' }
-      : { page: 'Page', points: 'Key points', defs: 'Definitions', keys: 'Key terms', empty: 'No readable text on this page.', notes: 'Notes' };
+      ? { page: 'पृष्ठ', points: 'मुख्य बिंदु', defs: 'परिभाषाएँ', empty: 'इस पृष्ठ पर पढ़ने योग्य टेक्स्ट नहीं है।', notes: 'नोट्स' }
+      : { page: 'Page', points: 'Key points', defs: 'Definitions', empty: 'No readable text on this page.', notes: 'Notes' };
   }
 
   function toText(notes, docName, lang) {
@@ -117,7 +100,6 @@ const Notes = (() => {
       if (n.empty) lines.push(L.empty);
       if (n.definitions.length) { lines.push(`${L.defs}:`); n.definitions.forEach(d => lines.push(`  • ${d}`)); }
       if (n.points.length) { lines.push(`${L.points}:`); n.points.forEach(d => lines.push(`  • ${d}`)); }
-      if (n.keywords.length) lines.push(`${L.keys}: ${n.keywords.join(', ')}`);
       lines.push('');
     });
     return lines.join('\r\n');
@@ -130,7 +112,6 @@ const Notes = (() => {
     if (n.empty) h += `<p>${L.empty}</p>`;
     if (n.definitions.length) h += `<h3>${L.defs}</h3><ul>${n.definitions.map(d => `<li>${esc(d)}</li>`).join('')}</ul>`;
     if (n.points.length) h += `<h3>${L.points}</h3><ul>${n.points.map(d => `<li>${esc(d)}</li>`).join('')}</ul>`;
-    if (n.keywords.length) h += `<h3>${L.keys}</h3><p>${n.keywords.map(esc).join(', ')}</p>`;
     return h + '</section>';
   }
 
