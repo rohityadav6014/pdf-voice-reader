@@ -173,6 +173,7 @@
       ui.nowTextHi.hidden = true;
     }
     Viewer.setHighlight(sentence.page, sentence.items, ui.follow.checked && Reader.playing);
+    if (Reader.playing) FX.pulse();
     if (sentence.page !== state.currentPage) {
       state.currentPage = sentence.page;
       markCurrentNote();
@@ -181,9 +182,10 @@
 
   Reader.on('hindi', ({ text }) => { ui.nowTextHi.hidden = false; ui.nowTextHi.textContent = text; });
   Reader.on('state', ({ playing }) => {
-    ui.play.textContent = playing ? '⏸' : '▶';
+    ui.play.classList.toggle('playing', playing);
     ui.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     Music.setPlaying(playing);
+    FX.setPlaying(playing);
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
@@ -381,7 +383,7 @@
     const esc = Notes.esc;
     ui.notesStatus.textContent = `${notes.length} page${notes.length === 1 ? '' : 's'} · generated in your browser`;
     ui.notesList.innerHTML = notes.map((n, i) => `
-      <article class="note-card${lang === 'hi' ? ' hi' : ''}" data-i="${i}">
+      <article class="note-card${lang === 'hi' ? ' hi' : ''}" data-i="${i}" style="--i:${i}">
         <div class="note-head">
           <div>
             <div class="note-page">${L.page} ${n.page}</div>
@@ -487,6 +489,7 @@
   });
 
   /* ---------- Start-up ---------- */
+  FX.init();
   (async () => {
     if (!('speechSynthesis' in window)) {
       toast('Your browser does not support speech. Please use Google Chrome or Microsoft Edge.', 10000);

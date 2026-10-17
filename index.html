@@ -3,16 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07071a">
   <title>PDF Voice Reader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="topbar">
+  <!-- Animated backdrop: CSS aurora (always) + Three.js scene (when motion is allowed) -->
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+  <canvas id="bg3d" class="bg3d" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar glass">
     <div class="brand">
-      <span class="logo" aria-hidden="true">🎧</span>
-      <span>PDF Voice Reader</span>
+      <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="brand-name">PDF Voice Reader</span>
     </div>
     <div class="topbar-actions">
       <span id="fileName" class="file-name"></span>
@@ -23,34 +29,49 @@
 
   <!-- Upload screen -->
   <section id="uploadScreen" class="upload-screen">
-    <div id="dropZone" class="drop-zone" tabindex="0">
-      <div class="drop-icon" aria-hidden="true">📄</div>
-      <h1>Listen to any PDF</h1>
-      <p>Upload a PDF to hear it in <strong>English</strong> or <strong>हिन्दी</strong> with a clear female voice,
-        and get page-by-page notes you can download.</p>
-      <label class="btn btn-primary btn-lg" for="fileInput">Choose PDF</label>
-      <input type="file" id="fileInput" accept="application/pdf" hidden>
-      <p class="hint">or drag &amp; drop the file here · your PDF stays in your browser</p>
+    <div class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow" data-reveal><span class="dot"></span> English · हिन्दी · Female voice</span>
+        <h1 data-reveal>Listen to any <span class="gradient-text">PDF</span></h1>
+        <p class="lead" data-reveal>Upload a PDF and hear it read aloud in a clear, natural voice, with page-by-page
+          notes you can download.</p>
+        <ul class="features">
+          <li class="glass" data-reveal><span class="f-icon">👆</span><span><b>Double-click to start</b> from any word on the page</span></li>
+          <li class="glass" data-reveal><span class="f-icon">⏭</span><span><b>Skip freely</b> by sentence, page, or slider</span></li>
+          <li class="glass" data-reveal><span class="f-icon">📝</span><span><b>Smart notes</b> for every page, in Word, text or PDF</span></li>
+        </ul>
+      </div>
+
+      <div id="dropZone" class="drop-zone glass" tabindex="0" data-tilt data-reveal>
+        <div class="doc-stack" aria-hidden="true">
+          <div class="doc d3"></div>
+          <div class="doc d2"></div>
+          <div class="doc d1"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="waves"><i></i><i></i><i></i></div>
+        </div>
+        <h2>Drop your PDF here</h2>
+        <p class="hint">or</p>
+        <label class="btn btn-primary btn-lg" for="fileInput">Choose PDF</label>
+        <input type="file" id="fileInput" accept="application/pdf" hidden>
+        <p class="hint small">🔒 Your PDF stays in your browser</p>
+      </div>
     </div>
-    <ul class="features">
-      <li><b>Double-click to start</b> reading from any word on the page</li>
-      <li><b>Skip</b> by sentence, by page, or jump with the slider</li>
-      <li><b>Notes</b> for every page — download as Word, text, or PDF</li>
-    </ul>
   </section>
 
   <!-- Loading -->
   <section id="loadingScreen" class="loading-screen" hidden>
-    <div class="spinner" aria-hidden="true"></div>
+    <div class="cube-scene" aria-hidden="true">
+      <div class="cube"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
     <p id="loadingText">Reading your PDF…</p>
     <div class="progress"><div id="loadingBar" class="progress-bar"></div></div>
   </section>
 
   <!-- Reader -->
   <main id="readerScreen" class="reader" hidden>
-    <section class="viewer-wrap">
+    <section class="viewer-wrap glass">
       <div class="viewer-toolbar">
-        <span class="tip">💡 Double-click any word to start reading from there</span>
+        <span class="tip">✨ Double-click any word to start reading from there</span>
         <div class="zoom">
           <button class="icon-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
           <span id="zoomLabel">100%</span>
@@ -60,13 +81,23 @@
       <div id="viewer" class="viewer"></div>
     </section>
 
-    <aside class="side">
+    <aside class="side glass">
       <div class="tabs" role="tablist">
         <button class="tab active" data-tab="listen" role="tab">🔊 Listen</button>
         <button class="tab" data-tab="notes" role="tab">📝 Notes</button>
+        <span class="tab-indicator" aria-hidden="true"></span>
       </div>
 
       <div class="tab-panel" id="panel-listen">
+        <div class="now-reading">
+          <div class="now-head">
+            <div class="field-label">Now reading <span id="posLabel" class="muted"></span></div>
+            <div class="eq eq-small" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <p id="nowText" class="now-text muted">Press play, or double-click a word in the PDF.</p>
+          <p id="nowTextHi" class="now-text hi" hidden></p>
+        </div>
+
         <div class="field">
           <span class="field-label">Audio language</span>
           <div class="segmented" id="langToggle">
@@ -111,11 +142,6 @@
           </div>
         </div>
 
-        <div class="now-reading">
-          <div class="field-label">Now reading <span id="posLabel" class="muted"></span></div>
-          <p id="nowText" class="now-text muted">Press play, or double-click a word in the PDF.</p>
-          <p id="nowTextHi" class="now-text hi" hidden></p>
-        </div>
         <p class="small muted">Shortcuts: <kbd>Space</kbd> play/pause · <kbd>←</kbd>/<kbd>→</kbd> sentence · <kbd>Shift</kbd>+<kbd>←</kbd>/<kbd>→</kbd> page</p>
       </div>
 
@@ -138,22 +164,37 @@
   </main>
 
   <!-- Player bar -->
-  <footer id="player" class="player" hidden>
+  <footer id="player" class="player glass" hidden>
     <div class="player-controls">
-      <button class="icon-btn" id="prevPage" title="Previous page (Shift+←)" aria-label="Previous page">⏮</button>
-      <button class="icon-btn" id="prevSent" title="Previous sentence (←)" aria-label="Previous sentence">⏪</button>
-      <button class="play-btn" id="playBtn" title="Play / Pause (Space)" aria-label="Play">▶</button>
-      <button class="icon-btn" id="nextSent" title="Next sentence (→)" aria-label="Next sentence">⏩</button>
-      <button class="icon-btn" id="nextPage" title="Next page (Shift+→)" aria-label="Next page">⏭</button>
-      <button class="icon-btn" id="stopBtn" title="Stop" aria-label="Stop">⏹</button>
+      <button class="icon-btn" id="prevPage" title="Previous page (Shift+←)" aria-label="Previous page">
+        <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
+      </button>
+      <button class="icon-btn" id="prevSent" title="Previous sentence (←)" aria-label="Previous sentence">
+        <svg viewBox="0 0 24 24"><path d="M11 6v12L2 12zM22 6v12l-9-6z"/></svg>
+      </button>
+      <button class="play-btn" id="playBtn" title="Play / Pause (Space)" aria-label="Play">
+        <span class="play-ring" aria-hidden="true"></span>
+        <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+      </button>
+      <button class="icon-btn" id="nextSent" title="Next sentence (→)" aria-label="Next sentence">
+        <svg viewBox="0 0 24 24"><path d="M13 6v12l9-6zM2 6v12l9-6z"/></svg>
+      </button>
+      <button class="icon-btn" id="nextPage" title="Next page (Shift+→)" aria-label="Next page">
+        <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>
+      </button>
+      <button class="icon-btn" id="stopBtn" title="Stop" aria-label="Stop">
+        <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
     </div>
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="seek">
       <input type="range" id="seek" min="0" max="0" value="0" aria-label="Jump to position">
       <span id="seekLabel" class="small muted">0 / 0</span>
     </div>
   </footer>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast glass" hidden></div>
 
   <!-- Print-only notes -->
   <div id="printArea" class="print-area"></div>
@@ -166,6 +207,7 @@
   <script src="js/viewer.js"></script>
   <script src="js/reader.js"></script>
   <script src="js/music.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

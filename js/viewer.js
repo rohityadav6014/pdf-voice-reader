@@ -83,6 +83,7 @@ const Viewer = (() => {
       el.canvas = canvas;
       el.layer = layer;
       el.rendered = true;
+      el.root.classList.add('is-rendered');
       el.root.classList.toggle('no-text', el.spans.size === 0);
       if (highlight.page === i) applyHighlight();
     })().finally(() => {
@@ -136,6 +137,7 @@ const Viewer = (() => {
   function setHighlight(page, itemIdxs, follow) {
     clearHighlight();
     highlight = { page, items: itemIdxs };
+    els.forEach((e, i) => e.root.classList.toggle('reading-page', i === page));
     if (page < 0) return;
     const el = els[page];
     if (!el) return;
@@ -183,6 +185,7 @@ const Viewer = (() => {
     computeScale();
     els.forEach((el, i) => {
       el.rendered = false;
+      el.root.classList.remove('is-rendered');
       sizePage(i);
       el.root.querySelectorAll('canvas, .text-layer').forEach(n => n.remove());
       el.spans = new Map();
