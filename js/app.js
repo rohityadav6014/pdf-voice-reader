@@ -134,6 +134,8 @@
     const copy = opts.id ? null : new Blob([buffer]);
     const ok = kind === 'docx' ? await openDocx(buffer, name) : await openPdf(buffer, name);
     if (!ok) return;
+    Analytics.event('open_file', { file_type: kind, reopened: Boolean(opts.id) });
+    state.listenedThisFile = false;
     state.fileId = id;
     await Library.remember({ id, name, kind, size: copy ? copy.size : buffer.byteLength }, copy);
     offerResume(id, opts.autoResume);
@@ -426,6 +428,10 @@
     Music.setPlaying(playing);
     document.body.classList.toggle('is-playing', playing);
     if (!playing) saveProgressNow();
+    if (playing && !state.listenedThisFile) {
+      state.listenedThisFile = true;
+      Analytics.event('start_listening', { language: Reader.lang });
+    }
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
@@ -740,6 +746,10 @@
   function notesLangNow() { return currentNotes() === state.notes.hi ? 'hi' : 'en'; }
   const suffix = () => (notesLangNow() === 'hi' ? ' (Hindi)' : '');
 
+  document.querySelector('.download-group').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) Analytics.event('download_notes', { format: b.id.replace(/^dl/, '').toLowerCase(), language: notesLangNow() });
+  });
   $('dlDoc').addEventListener('click', () => {
     download(`${state.docName} - notes${suffix()}.doc`, '﻿' + Notes.toWordDoc(currentNotes(), state.docName, notesLangNow()), 'application/msword');
   });
@@ -754,6 +764,7 @@
 
   /* ---------- Start-up ---------- */
   renderRecent();
+  $('statsNote').hidden = !Analytics.enabled;
   (async () => {
     if (!('speechSynthesis' in window)) {
       toast('Your browser does not support speech. Please use Google Chrome or Microsoft Edge.', 10000);
