@@ -22,6 +22,8 @@ If no Hindi voice shows up, add Hindi in Windows Settings → Time & language �
 - **Double-click any word** in the PDF to start reading from that word (double-tap on phones).
 - **Skip**: previous/next sentence, previous/next page, or drag the slider. Keys: `Space`, `←/→`, `Shift+←/→`.
 - **English / हिन्दी audio**: Hindi is translated sentence by sentence (Google Translate) and read by a Hindi voice.
+- **Background music** at 40% under the reading voice (adjustable). It starts and pauses with the reading.
+  The default track is played through YouTube's embedded player; paste another YouTube link or upload your own audio file.
 - **Notes per page**: title, definitions, key points, key terms, in English or Hindi.
   Download as Word (.doc), text (.txt) or PDF (print → Save as PDF), or per page.
 

@@ -115,6 +115,7 @@
     }
 
     show('reader');
+    Music.prepare();
     Viewer.init(pdf, ui.viewer, state.pages, onDoubleClick);
     ui.zoomLabel.textContent = '100%';
     Reader.load(sentences);
@@ -182,6 +183,7 @@
   Reader.on('state', ({ playing }) => {
     ui.play.textContent = playing ? '⏸' : '▶';
     ui.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    Music.setPlaying(playing);
   });
   Reader.on('busy', busy => { if (busy) ui.nowTextHi.textContent = 'अनुवाद हो रहा है…'; });
   Reader.on('error', msg => toast(msg, 6000));
@@ -199,7 +201,7 @@
   ui.seek.addEventListener('change', () => Reader.goTo(+ui.seek.value));
 
   document.addEventListener('keydown', e => {
-    if (ui.reader.hidden || e.target.closest('input:not([type=range]), select, textarea')) return;
+    if (ui.reader.hidden || e.target.closest('input:not(#seek), select, textarea')) return;
     if (e.code === 'Space') { e.preventDefault(); Reader.toggle(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); e.shiftKey ? Reader.nextPage() : Reader.nextSentence(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); e.shiftKey ? Reader.prevPage() : Reader.prevSentence(); }
@@ -280,6 +282,56 @@
   }
 
   ui.rate.addEventListener('change', () => { Reader.setRate(+ui.rate.value); store.set('pdfreader.rate', ui.rate.value); });
+
+  /* ---------- Background music ---------- */
+  const music = {
+    toggle: $('musicToggle'), controls: $('musicControls'), volume: $('musicVolume'), volLabel: $('musicVolLabel'),
+    url: $('musicUrl'), urlBtn: $('musicUrlBtn'), file: $('musicFile'), name: $('musicName'),
+  };
+
+  function initMusic() {
+    const savedVol = store.get('pdfreader.music.volume');
+    const vol = savedVol !== null && !isNaN(+savedVol) ? +savedVol : 40;
+    const enabled = store.get('pdfreader.music.enabled') !== 'off';
+    const video = store.get('pdfreader.music.video') || Music.DEFAULT_VIDEO;
+    Music.init({ host: $('musicPlayer'), enabled, volume: vol, videoId: video });
+    music.toggle.checked = enabled;
+    music.controls.hidden = !enabled;
+    music.volume.value = vol;
+    music.volLabel.textContent = vol + '%';
+    music.name.textContent = Music.videoId === Music.DEFAULT_VIDEO
+      ? 'Playing "Deep Focus – Music for Studying" (Quiet Quest) from YouTube.'
+      : 'Playing your YouTube link.';
+  }
+
+  music.toggle.addEventListener('change', () => {
+    music.controls.hidden = !music.toggle.checked;
+    Music.setEnabled(music.toggle.checked);
+    store.set('pdfreader.music.enabled', music.toggle.checked ? 'on' : 'off');
+  });
+  music.volume.addEventListener('input', () => {
+    music.volLabel.textContent = music.volume.value + '%';
+    Music.setVolume(+music.volume.value);
+    store.set('pdfreader.music.volume', music.volume.value);
+  });
+  const useLink = () => {
+    if (!music.url.value.trim()) return;
+    if (!Music.setVideo(music.url.value)) { toast('That doesn\'t look like a YouTube video link.'); return; }
+    store.set('pdfreader.music.video', Music.videoId);
+    music.name.textContent = 'Playing your YouTube link.';
+    music.url.value = '';
+  };
+  music.urlBtn.addEventListener('click', useLink);
+  music.url.addEventListener('keydown', e => { if (e.key === 'Enter') useLink(); });
+  music.file.addEventListener('change', () => {
+    const f = music.file.files[0];
+    if (!f) return;
+    Music.setFile(f);
+    music.name.textContent = `Playing your file: ${f.name}`;
+    music.file.value = '';
+  });
+  Music.on('error', msg => toast(msg, 7000));
+  initMusic();
 
   /* ---------- Tabs ---------- */
   document.querySelector('.tabs').addEventListener('click', e => {

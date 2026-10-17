@@ -85,6 +85,7 @@ const Reader = (() => {
       u.lang = v ? v.lang : lang === 'hi' ? 'hi-IN' : 'en-IN';
       u.rate = rate;
       u.pitch = 1.05;
+      u.volume = 1; // the voice stays at full volume; background music sits underneath
       const t0 = performance.now();
       const finished = failed => {
         if (my !== token) return;

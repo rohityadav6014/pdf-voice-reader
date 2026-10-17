@@ -92,6 +92,24 @@
         </div>
         <label class="check"><input type="checkbox" id="followToggle" checked> Auto-scroll to what's being read</label>
 
+        <div class="music">
+          <label class="check"><input type="checkbox" id="musicToggle" checked> 🎵 Background music</label>
+          <div id="musicControls" class="music-controls">
+            <div class="field">
+              <label class="field-label" for="musicVolume">Music volume <span id="musicVolLabel" class="muted">40%</span></label>
+              <input type="range" id="musicVolume" min="0" max="100" step="5" value="40">
+            </div>
+            <div class="music-source">
+              <input type="url" id="musicUrl" placeholder="Paste a YouTube link" aria-label="YouTube link for background music">
+              <button class="btn" id="musicUrlBtn">Use</button>
+              <label class="btn" for="musicFile" title="Use an audio file from your device">⬆ File</label>
+              <input type="file" id="musicFile" accept="audio/*" hidden>
+            </div>
+            <p id="musicName" class="small muted"></p>
+            <div id="musicPlayer" class="music-player" hidden></div>
+          </div>
+        </div>
+
         <div class="now-reading">
           <div class="field-label">Now reading <span id="posLabel" class="muted"></span></div>
           <p id="nowText" class="now-text muted">Press play, or double-click a word in the PDF.</p>
@@ -146,6 +164,7 @@
   <script src="js/voices.js"></script>
   <script src="js/viewer.js"></script>
   <script src="js/reader.js"></script>
+  <script src="js/music.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
