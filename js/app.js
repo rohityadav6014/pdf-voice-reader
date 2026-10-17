@@ -287,22 +287,34 @@
   const music = {
     toggle: $('musicToggle'), controls: $('musicControls'), volume: $('musicVolume'), volLabel: $('musicVolLabel'),
     url: $('musicUrl'), urlBtn: $('musicUrlBtn'), file: $('musicFile'), name: $('musicName'),
+    reset: $('musicDefaultBtn'),
   };
+  let musicFileName = '';
 
   function initMusic() {
     const savedVol = store.get('pdfreader.music.volume');
     const vol = savedVol !== null && !isNaN(+savedVol) ? +savedVol : 40;
     const enabled = store.get('pdfreader.music.enabled') !== 'off';
-    const video = store.get('pdfreader.music.video') || Music.DEFAULT_VIDEO;
+    // No saved link → the default music folder plays, on a loop.
+    const video = store.get('pdfreader.music.video');
     Music.init({ host: $('musicPlayer'), enabled, volume: vol, videoId: video });
     music.toggle.checked = enabled;
     music.controls.hidden = !enabled;
     music.volume.value = vol;
     music.volLabel.textContent = vol + '%';
-    music.name.textContent = Music.videoId === Music.DEFAULT_VIDEO
-      ? 'Playing "Deep Focus – Music for Studying" (Quiet Quest) from YouTube.'
-      : 'Playing your YouTube link.';
+    Music.findFolderTracks();
   }
+
+  Music.on('track', t => {
+    music.reset.hidden = t.kind === 'folder' || t.kind === 'fallback';
+    if (t.kind === 'file') music.name.textContent = `Playing your file: ${musicFileName} (looping)`;
+    else if (t.kind === 'youtube') music.name.textContent = 'Playing your YouTube link (looping).';
+    else if (t.kind === 'fallback') music.name.textContent = 'Music folder is empty — playing "Deep Focus" (Quiet Quest) from YouTube.';
+    else if (t.loading) music.name.textContent = 'Default music from the music folder (looping).';
+    else music.name.textContent = t.count > 1
+      ? `Default music: ${t.name} (${t.index + 1} of ${t.count}, playlist loops).`
+      : `Default music: ${t.name} (looping).`;
+  });
 
   music.toggle.addEventListener('change', () => {
     music.controls.hidden = !music.toggle.checked;
@@ -318,16 +330,19 @@
     if (!music.url.value.trim()) return;
     if (!Music.setVideo(music.url.value)) { toast('That doesn\'t look like a YouTube video link.'); return; }
     store.set('pdfreader.music.video', Music.videoId);
-    music.name.textContent = 'Playing your YouTube link.';
     music.url.value = '';
   };
+  music.reset.addEventListener('click', () => {
+    store.set('pdfreader.music.video', '');
+    Music.useDefault();
+  });
   music.urlBtn.addEventListener('click', useLink);
   music.url.addEventListener('keydown', e => { if (e.key === 'Enter') useLink(); });
   music.file.addEventListener('change', () => {
     const f = music.file.files[0];
     if (!f) return;
+    musicFileName = f.name;
     Music.setFile(f);
-    music.name.textContent = `Playing your file: ${f.name}`;
     music.file.value = '';
   });
   Music.on('error', msg => toast(msg, 7000));
