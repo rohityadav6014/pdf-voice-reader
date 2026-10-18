@@ -4,7 +4,7 @@
  */
 const Analytics = (() => {
   // Your GA4 Measurement ID, e.g. 'G-ABC123XYZ9' (analytics.google.com → Admin → Data streams).
-  const MEASUREMENT_ID = '';
+  const MEASUREMENT_ID = 'G-0FCQPQX51P';
 
   // Off until an ID is set, and never on local testing so it doesn't inflate the numbers.
   const enabled = /^G-[A-Z0-9]+$/.test(MEASUREMENT_ID) &&
