@@ -8,8 +8,8 @@
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=16">
-  <link rel="stylesheet" href="css/admin.css?v=16">
+  <link rel="stylesheet" href="css/styles.css?v=17">
+  <link rel="stylesheet" href="css/admin.css?v=17">
 </head>
 <body class="admin">
   <header class="topbar">
@@ -33,8 +33,10 @@
     <!-- Sign in -->
     <section id="loginView" class="login-card" hidden>
       <h1>Admin sign in</h1>
-      <p class="muted">Enter the admin password you set in Vercel.</p>
+      <p class="muted">Sign in with your admin email and the password you set in Vercel.</p>
       <form id="loginForm">
+        <label class="field-label" for="email">Admin email</label>
+        <input type="email" id="email" autocomplete="username" required>
         <label class="field-label" for="password">Password</label>
         <input type="password" id="password" autocomplete="current-password" required>
         <button class="btn btn-primary" type="submit" id="loginBtn">Sign in</button>
@@ -105,6 +107,6 @@
   </main>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="js/admin.js?v=16"></script>
+  <script src="js/admin.js?v=17"></script>
 </body>
 </html>

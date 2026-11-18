@@ -1,7 +1,7 @@
 /*
  * GET /api/stats?days=7 — analytics summary for the admin panel.
- * Requires the X-Admin-Key header to match the ADMIN_PASSWORD environment variable
- * (set by the site owner in Vercel). Repeated wrong passwords are locked out for 15 minutes.
+ * Requires X-Admin-Key to match ADMIN_PASSWORD and, when ADMIN_EMAIL is set, X-Admin-Email to match it
+ * (both set by the site owner in Vercel). Repeated wrong logins are locked out for 15 minutes.
  */
 const crypto = require('crypto');
 const { pipeline, dayKey, cors, send, storeConfig } = require('./_lib/store');
@@ -45,11 +45,16 @@ module.exports = async (req, res) => {
   const [failures] = await pipeline([['GET', failKey]]).catch(() => [0]);
   if (Number(failures) >= MAX_FAILURES) return send(res, 429, { error: 'too many attempts, try again in 15 minutes' });
 
+  // Admin ID: the owner's email (ADMIN_EMAIL, optional) plus the password, both checked every time.
+  const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const givenEmail = String(req.headers['x-admin-email'] || '').trim().toLowerCase();
   const given = req.headers['x-admin-key'];
-  if (!given || !sameSecret(given, password)) {
+  const emailOk = !adminEmail || sameSecret(givenEmail, adminEmail);
+  const passwordOk = Boolean(given) && sameSecret(given, password);
+  if (!emailOk || !passwordOk) {
     await pipeline([['INCR', failKey], ['EXPIRE', failKey, 900]]).catch(() => {});
     await sleep(700);
-    return send(res, 401, { error: 'wrong password' });
+    return send(res, 401, { error: 'wrong login' });
   }
 
   const url = new URL(req.url, 'http://x');

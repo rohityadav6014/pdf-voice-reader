@@ -48,14 +48,19 @@
     toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4000);
   }
 
-  const getKey = () => { try { return sessionStorage.getItem(KEY); } catch { return null; } };
-  const setKey = k => { try { k ? sessionStorage.setItem(KEY, k) : sessionStorage.removeItem(KEY); } catch { /* ignore */ } };
+  // The login ({ email, password }) is kept only for this browser tab.
+  const getKey = () => { try { return JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch { return null; } };
+  const setKey = k => { try { k ? sessionStorage.setItem(KEY, JSON.stringify(k)) : sessionStorage.removeItem(KEY); } catch { /* ignore */ } };
 
   /* ---------- Data ---------- */
-  async function load(password, quiet) {
+  async function load(login, quiet) {
+    if (!login || !login.password) { show('loginView'); return false; }
     let res;
     try {
-      res = await fetch(`/api/stats?days=${state.days}`, { headers: { 'X-Admin-Key': password }, cache: 'no-store' });
+      res = await fetch(`/api/stats?days=${state.days}`, {
+        headers: { 'X-Admin-Key': login.password, 'X-Admin-Email': login.email || '' },
+        cache: 'no-store',
+      });
     } catch {
       if (!quiet) toast('Could not reach the server. Check your connection.');
       return false;
@@ -66,7 +71,7 @@
     if (res.status === 401 || res.status === 429) {
       setKey(null);
       show('loginView');
-      $('loginError').textContent = body.error === 'wrong password' ? 'That password is not right.' : (body.error || 'Please sign in again.');
+      $('loginError').textContent = body.error === 'wrong login' ? 'That email or password is not right.' : (body.error || 'Please sign in again.');
       return false;
     }
     if (!res.ok) { if (!quiet) toast(body.error || 'Something went wrong loading the stats.'); return false; }
@@ -253,13 +258,13 @@
   });
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const pw = $('password').value;
-    if (!pw) return;
+    const login = { email: $('email').value.trim(), password: $('password').value };
+    if (!login.password) return;
     $('loginBtn').disabled = true;
     $('loginError').textContent = '';
-    const ok = await load(pw);
+    const ok = await load(login);
     $('loginBtn').disabled = false;
-    if (ok) { setKey(pw); $('password').value = ''; }
+    if (ok) { setKey(login); $('password').value = ''; }
   });
 
   let resizeTimer;
@@ -280,6 +285,6 @@
     load(getKey());
   } else {
     show('loginView');
-    $('password').focus();
+    $('email').focus();
   }
 })();
