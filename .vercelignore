@@ -1,0 +1,7 @@
+# Files Vercel should not upload.
+# music/ holds local tracks that aren't cleared for publishing; the site falls back to YouTube without them.
+music/
+.claude/
+CLAUDE.md
+.env*
+.vercel

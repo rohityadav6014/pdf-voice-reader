@@ -4,6 +4,8 @@ Static website (no build step): `index.html`, `css/`, `js/`. Run with `python -m
 
 Live on GitHub Pages (public repo `rohityadav6014/pdf-voice-reader`, branch `main`, root): https://rohityadav6014.github.io/pdf-voice-reader/ — every push to `main` redeploys it.
 
+Also live on Vercel (free Hobby plan, project `sunotes`, team `profit222`): https://sunotes-sigma.vercel.app — it is NOT connected to GitHub, so after pushing, redeploy with `vercel deploy --prod --yes` from the project folder (Vercel CLI is installed globally via npm; Node.js is at the default install path, refresh PATH as below if needed). `.vercelignore` keeps `music/`, `.env*`, `.claude/` and `CLAUDE.md` out of the upload.
+
 When you change any file in `css/` or `js/`, bump the `?v=N` number on every local `<link>`/`<script>` in `index.html` so browsers (and GitHub Pages' 10-minute cache) load the new files.
 
 ## Git workflow
