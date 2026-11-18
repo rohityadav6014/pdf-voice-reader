@@ -40,7 +40,7 @@ If no Hindi voice shows up, add Hindi in Windows Settings → Time & language �
 - **Admin panel:** https://sunotes-sigma.vercel.app/admin — visitors, active now, page views, files opened, listening,
   downloads, a daily chart and breakdowns (country, device, browser, referrer, file type, language, speed, skips, problems).
 - It needs two settings in the Vercel project: an **Upstash for Redis** database (Storage tab, free plan) connected to
-  the project, and an `ADMIN_PASSWORD` environment variable that only the owner knows.
+  the project, plus `ADMIN_EMAIL` (the admin ID) and `ADMIN_PASSWORD` environment variables that only the owner knows.
 
 ## Notes
 
