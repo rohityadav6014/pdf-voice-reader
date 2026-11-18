@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sunotes admin</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=16">
+  <link rel="stylesheet" href="css/admin.css?v=16">
+</head>
+<body class="admin">
+  <header class="topbar">
+    <a href="./" class="brand" title="Back to Sunotes">
+      <img class="logo" src="assets/logo.svg" alt="" width="32" height="32">
+      <span class="brand-name">Sunotes <span class="admin-tag">Admin</span></span>
+    </a>
+    <div class="topbar-actions" id="adminActions" hidden>
+      <div class="segmented" id="rangeToggle" role="group" aria-label="Date range">
+        <button data-days="1">Today</button>
+        <button data-days="7" class="active">7 days</button>
+        <button data-days="30">30 days</button>
+        <button data-days="90">90 days</button>
+      </div>
+      <button class="btn btn-quiet" id="refreshBtn" title="Refresh now">Refresh</button>
+      <button class="btn" id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <!-- Sign in -->
+    <section id="loginView" class="login-card" hidden>
+      <h1>Admin sign in</h1>
+      <p class="muted">Enter the admin password you set in Vercel.</p>
+      <form id="loginForm">
+        <label class="field-label" for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+        <button class="btn btn-primary" type="submit" id="loginBtn">Sign in</button>
+        <p id="loginError" class="login-error" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- Setup needed -->
+    <section id="setupView" class="login-card" hidden>
+      <h1>Finish setting up</h1>
+      <p class="muted">The admin panel needs two things in your Vercel project <b>sunotes</b>:</p>
+      <ol id="setupList" class="setup-list"></ol>
+      <p class="small muted">After adding them, redeploy the project, then reload this page.</p>
+    </section>
+
+    <!-- Wrong site -->
+    <section id="elsewhereView" class="login-card" hidden>
+      <h1>Admin lives on Vercel</h1>
+      <p class="muted">The admin panel only works on the Vercel copy of the site.</p>
+      <a class="btn btn-primary" href="https://sunotes-sigma.vercel.app/admin">Open the admin panel</a>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashView" hidden>
+      <div class="dash-head">
+        <h1>Overview</h1>
+        <p class="small muted" id="rangeLabel"></p>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="card chart-card">
+        <div class="card-head">
+          <h2 id="chartTitle">Visitors per day</h2>
+          <div class="segmented" id="metricToggle" role="group" aria-label="Chart metric">
+            <button data-metric="visitors" class="active">Visitors</button>
+            <button data-metric="page_views">Page views</button>
+            <button data-metric="files_opened">Files opened</button>
+            <button data-metric="listening">Listening</button>
+          </div>
+        </div>
+        <div class="chart" id="chart"></div>
+        <div class="chart-tooltip" id="chartTip" hidden></div>
+        <button class="btn btn-quiet small" id="tableToggle" aria-expanded="false">Show as table</button>
+        <div id="chartTable" class="table-wrap" hidden></div>
+      </div>
+
+      <div class="grid">
+        <div class="card span-2">
+          <div class="card-head"><h2>What people do</h2><span class="small muted">all actions in this period</span></div>
+          <div id="actions" class="meter-list two-col"></div>
+        </div>
+        <div class="card"><div class="card-head"><h2>Countries</h2></div><div id="b-country" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Devices</h2></div><div id="b-device" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Browsers</h2></div><div id="b-browser" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Where visitors came from</h2></div><div id="b-referrer" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>File types opened</h2></div><div id="b-file_type" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Listening language</h2></div><div id="b-listen_language" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Reading speed chosen</h2></div><div id="b-speed" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Notes downloads</h2></div><div id="b-download_format" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>How people skip</h2></div><div id="b-skip_type" class="meter-list"></div></div>
+        <div class="card"><div class="card-head"><h2>Problems</h2></div><div id="b-error_type" class="meter-list"></div></div>
+      </div>
+
+      <p class="small muted dash-foot">Days are counted in India time. Visitors are counted per browser, anonymously; no names, files or IP addresses are stored.
+        For deeper reports open <a href="https://analytics.google.com" target="_blank" rel="noopener">Google Analytics</a>.</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="js/admin.js?v=16"></script>
+</body>
+</html>

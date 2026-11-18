@@ -32,6 +32,16 @@ If no Hindi voice shows up, add Hindi in Windows Settings → Time & language �
 - **Notes per page**: title, definitions and key points, in English or Hindi.
   Download as Word (.doc), text (.txt) or PDF (print → Save as PDF), or per page.
 
+## Analytics & admin panel
+
+- Every action (opening files, play/pause, skips, double-click starts, language, voice, speed, zoom, notes, downloads,
+  resume, music, errors) is sent anonymously to Google Analytics (`G-0FCQPQX51P`) and to the site's own collector
+  (`/api/track` on Vercel). No file names, document text, notes or IP addresses are stored.
+- **Admin panel:** https://sunotes-sigma.vercel.app/admin — visitors, active now, page views, files opened, listening,
+  downloads, a daily chart and breakdowns (country, device, browser, referrer, file type, language, speed, skips, problems).
+- It needs two settings in the Vercel project: an **Upstash for Redis** database (Storage tab, free plan) connected to
+  the project, and an `ADMIN_PASSWORD` environment variable that only the owner knows.
+
 ## Notes
 
 - Your file is processed in the browser. Only the text sent for Hindi translation leaves your device.

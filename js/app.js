@@ -133,7 +133,7 @@
     // Copy the bytes before pdf.js takes ownership of the buffer.
     const copy = opts.id ? null : new Blob([buffer]);
     const ok = kind === 'docx' ? await openDocx(buffer, name) : await openPdf(buffer, name);
-    if (!ok) return;
+    if (!ok) { Analytics.event('open_file_failed', { file_type: kind }); return; }
     Analytics.event('open_file', { file_type: kind, reopened: Boolean(opts.id) });
     state.listenedThisFile = false;
     state.fileId = id;
@@ -748,7 +748,7 @@
 
   document.querySelector('.download-group').addEventListener('click', e => {
     const b = e.target.closest('button');
-    if (b) Analytics.event('download_notes', { format: b.id.replace(/^dl/, '').toLowerCase(), language: notesLangNow() });
+    if (b) Analytics.event('download_notes', { format: b.id.replace(/^dl/, '').toLowerCase(), language: notesLangNow(), scope: 'all' });
   });
   $('dlDoc').addEventListener('click', () => {
     download(`${state.docName} - notes${suffix()}.doc`, '﻿' + Notes.toWordDoc(currentNotes(), state.docName, notesLangNow()), 'application/msword');
