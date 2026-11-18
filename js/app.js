@@ -286,6 +286,7 @@
   // Shared last steps after a PDF or Word file is ready.
   function finishOpen(sentences, emptyMessage) {
     Music.prepare();
+    Reader.setTitle(state.docName); // shown on the phone's lock screen / notification
     ui.zoomLabel.textContent = '100%';
     Reader.load(sentences);
     ui.seek.max = Math.max(sentences.length - 1, 0);
@@ -512,12 +513,12 @@
     ui.voiceSelect.innerHTML = '';
     if (!list.length) {
       const o = document.createElement('option');
-      o.textContent = 'Default system voice';
+      o.textContent = Voices.isMobile ? "Phone's built-in voice" : 'Default system voice';
       ui.voiceSelect.appendChild(o);
       Reader.setVoice(lang, null);
-      ui.voiceHint.textContent = lang === 'hi'
+      ui.voiceHint.textContent = PHONE_TIP[lang] || (lang === 'hi'
         ? 'No Hindi voice on this device. For the best Hindi female voice use Microsoft Edge or Google Chrome, or add Hindi in Windows Settings → Time & language → Speech.'
-        : 'No English voice found. Try Microsoft Edge or Google Chrome.';
+        : 'No English voice found. Try Microsoft Edge or Google Chrome.');
       return;
     }
     const saved = store.get('pdfreader.voice.' + lang);
@@ -541,7 +542,22 @@
     voiceHint(list[selected]);
   }
 
+  // Phones read with their own text-to-speech engine; the voice is chosen in the phone's settings.
+  const PHONE_TIP = !Voices.isMobile ? {} : Voices.isIOS ? {
+    en: "Uses your iPhone's built-in voice. To choose a clearer female voice: Settings → Accessibility → Spoken Content → Voices → English (e.g. Samantha or Veena, Enhanced).",
+    hi: 'No Hindi voice yet. On your iPhone: Settings → Accessibility → Spoken Content → Voices → Hindi → download Lekha.',
+    pick: "Using your iPhone's built-in voice. More voices: Settings → Accessibility → Spoken Content → Voices.",
+  } : {
+    en: "Uses your phone's built-in voice. To change it: Settings → search \"Text-to-speech\" → Speech Services by Google → choose a voice.",
+    hi: 'No Hindi voice yet. On your phone: Settings → search "Text-to-speech" → Speech Services by Google → Install voice data → Hindi.',
+    pick: "Using your phone's built-in voice. To change it: Settings → search \"Text-to-speech\" → Speech Services by Google.",
+  };
+
   function voiceHint(v) {
+    if (Voices.isMobile) {
+      ui.voiceHint.textContent = v.gender === 'female' ? '' : PHONE_TIP.pick;
+      return;
+    }
     const natural = /natural|neural|online/i.test(v.voice.name);
     if (v.gender !== 'female') {
       ui.voiceHint.textContent = 'No female voice detected for this language on your device — using the closest match. Microsoft Edge offers natural female voices (Neerja for English, Swara for Hindi).';
@@ -763,6 +779,8 @@
   });
 
   /* ---------- Start-up ---------- */
+  // Phones (iPhone especially) only allow speech that starts from a tap: unlock it on the first one.
+  ['touchend', 'click', 'keydown'].forEach(t => document.addEventListener(t, () => Reader.unlock(), { capture: true, passive: true }));
   renderRecent();
   $('statsNote').hidden = !Analytics.enabled;
   (async () => {
